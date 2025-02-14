@@ -3,8 +3,8 @@ require 'config.php';
 session_start();
 
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email ");
-    $stmt->execute(['email' => $_SESSION['email']]);
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id ");
+    $stmt->execute(['id' => $_SESSION['id']]);
     $user = $stmt->fetchAll();
 
 
@@ -21,13 +21,14 @@ session_start();
         if ( empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email) || empty($mot_de_passe)) {
             $error = "Tous les champs doivent être remplis.";
         } else {
+            
                 // Modifier
                 $stmt = $pdo->prepare("UPDATE users SET nom=:nom, prenom=:prenom,date_naissance=:date_naissance,
                 adresse=:adresse,telephone=:telephone,email=:email,mot_de_passe=:mot_de_passe WHERE id=:id");
     
                 $stmt->execute(['nom' => $nom, 'prenom' => $prenom, 'date_naissance'=> $date_naissance,'adresse' => $adresse,'telephone' => $telephone,'email' => $email,'mot_de_passe' => $mot_de_passe, 'id'=>$_SESSION['id'] ]);
-    
-               
+                header('Location: profil.php');
+
                
             }
         }
@@ -91,6 +92,7 @@ session_start();
                 </div>
 
             <button type="submit" class="btn btn-primary">Modifier</button>
+            
         </form>
 
         
