@@ -101,14 +101,22 @@ session_start();
 
             
         </form>
-        <form action="delete.php" method="POST">
-            <button type="submit" class="btn btn-danger">Supprimer Compte</button>
-        </form>
+        
 
-        <form action="disconect.php" method="POST">
-            <button type="submit" class="btn btn-danger">Deconexion</button>
-        </form>
+        
         
     </div>
+
+    <div class="container mt-4">
+            <form action="disconect.php" method="POST">
+                <button type="submit" class="btn btn-btn btn-secondary">Deconexion</button>
+            </form>
+        </div>
+
+        <div class="container mt-4">
+            <form action="delete.php" method="POST">
+                <button type="submit" class="btn btn-danger">Supprimer Compte</button>
+            </form>
+        </div>
 </body>
 </html>
