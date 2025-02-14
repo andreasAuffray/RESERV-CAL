@@ -10,7 +10,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Vérification des identifiants dans la base de données
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email AND mot_de_passe = :mot_de_passe");
-    $mot_de_passe=password_hash($mot_de_passe);
     $stmt->execute(['email' => $email, 'mot_de_passe' => $mot_de_passe]);
     $user = $stmt->fetch();
 
@@ -21,7 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $_SESSION['email'] = $user['email'];
 
         // Rediriger vers le login
-        header('Location: login.php');
+        header('Location: profil.php');
         exit();
     } else {
         // Message d'erreur si les identifiants sont incorrects
