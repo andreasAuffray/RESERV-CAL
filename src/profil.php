@@ -21,7 +21,13 @@ session_start();
         if ( empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email) || empty($mot_de_passe)) {
             $error = "Tous les champs doivent être remplis.";
         } else {
-            
+            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email");
+            $stmt->execute(['email' => $email]);
+            $existingUser = $stmt->fetch();
+    
+            if ($existingUser) {
+                $error = "L'adresse mail est déjà utilisé.";
+            } else {
                 // Modifier
                 $stmt = $pdo->prepare("UPDATE users SET nom=:nom, prenom=:prenom,date_naissance=:date_naissance,
                 adresse=:adresse,telephone=:telephone,email=:email,mot_de_passe=:mot_de_passe WHERE id=:id");
@@ -32,7 +38,7 @@ session_start();
                
             }
         }
-    
+    }
     ?>
 
 
