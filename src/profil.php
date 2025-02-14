@@ -98,7 +98,11 @@ session_start();
                 </div>
 
             <button type="submit" class="btn btn-primary">Modifier</button>
+
             
+        </form>
+        <form action="delete.php" method="POST">
+            <button type="submit" class="btn btn-danger">Supprimer Compte</button>
         </form>
 
         
