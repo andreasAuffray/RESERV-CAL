@@ -5,8 +5,8 @@
         $stmt = $pdo->prepare("DELETE FROM users WHERE id=:id;");
         $stmt->execute(['id' => $_SESSION['id']]);
         $user = $stmt->fetch();
-
+        session_destroy();
         header('Location: login.php');
     }
-    session_destroy();
+    
 ?>
