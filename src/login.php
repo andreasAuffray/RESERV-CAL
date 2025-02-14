@@ -6,11 +6,12 @@ require 'config.php';
 // Vérification de la soumission du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'];
-    $password = $_POST['password'];
+    $mot_de_passe = $_POST['mot_de_passe'];
 
     // Vérification des identifiants dans la base de données
     $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email AND mot_de_passe = :mot_de_passe");
-    $stmt->execute(['email' => $email, 'mot_de_passe' => $password]);
+    $mot_de_passe=password_hash($mot_de_passe);
+    $stmt->execute(['email' => $email, 'mot_de_passe' => $mot_de_passe]);
     $user = $stmt->fetch();
 
     // Si l'utilisateur existe
@@ -54,8 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="email" class="form-control" id="email" name="email" required>
                 </div>
                 <div class="mb-3">
-                    <label for="password" class="form-label">Mot de passe</label>
-                    <input type="password" class="form-control" id="password" name="password" required>
+                    <label for="mot_de_passe" class="form-label">Mot de passe</label>
+                    <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe" required>
                 </div>
                 <button type="submit" class="btn btn-primary w-100">Se connecter</button>
             </form>
