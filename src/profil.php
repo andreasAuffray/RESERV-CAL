@@ -105,6 +105,9 @@ session_start();
             <button type="submit" class="btn btn-danger">Supprimer Compte</button>
         </form>
 
+        <form action="disconect.php" method="POST">
+            <button type="submit" class="btn btn-danger">Deconexion</button>
+        </form>
         
     </div>
 </body>
