@@ -8,35 +8,55 @@ if (!isset($_SESSION['id'])) {
     exit();
 }
 
-// Récupérer les données de l'utilisateur connecté
+// Récupérer les informations de l'utilisateur connecté
 $stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id");
 $stmt->execute(['id' => $_SESSION['id']]);
-$user = $stmt->fetch();
+$user = $stmt->fetch();  // Notez qu'on utilise fetch() et non fetchAll()
+
+// Vérifier si l'utilisateur existe
+if (!$user) {
+    // Si l'utilisateur n'existe pas, rediriger vers la page de connexion
+    header('Location: login.php');
+    exit();
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = htmlspecialchars($_POST['nom']);
-    $prenom = htmlspecialchars($_POST['prenom']);
-    $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
-    $adresse = htmlspecialchars($_POST['adresse']);
-    $telephone = htmlspecialchars($_POST['telephone']);
+    $nom = $_POST['nom'];
+    $prenom = $_POST['prenom'];
+    $date_naissance = $_POST['date_naissance'];
+    $adresse = $_POST['adresse'];
+    $telephone = $_POST['telephone'];
+    $email = $_POST['email'];
+    $mot_de_passe = $_POST['mot_de_passe'];
 
-    // Vérifier si un mot de passe a été renseigné pour mise à jour
-    if (!empty($_POST['mot_de_passe'])) {
-        $mot_de_passe = password_hash($_POST['mot_de_passe'], PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, adresse = ?, telephone = ?, mot_de_passe = ? WHERE id = ?");
-        $stmt->execute([$nom, $prenom, $email, $adresse, $telephone, $mot_de_passe, $_SESSION['id']]);
+    // Vérifier que les champs sont remplis
+    if (empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email) || empty($mot_de_passe)) {
+        $error = "Tous les champs doivent être remplis.";
     } else {
-        $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, adresse = ?, telephone = ? WHERE id = ?");
-        $stmt->execute([$nom, $prenom, $email, $adresse, $telephone, $_SESSION['id']]);
-    }
+        // Hash du mot de passe
+        $mot_de_passe_hache = password_hash($mot_de_passe, PASSWORD_BCRYPT);
 
-    header('Location: profil.php');
+        // Mise à jour des informations de l'utilisateur
+        $stmt = $pdo->prepare("UPDATE users SET nom = :nom, prenom = :prenom, date_naissance = :date_naissance, adresse = :adresse, 
+            telephone = :telephone, email = :email, mot_de_passe = :mot_de_passe WHERE id = :id");
+
+        $stmt->execute([
+            'nom' => $nom,
+            'prenom' => $prenom,
+            'date_naissance' => $date_naissance,
+            'adresse' => $adresse,
+            'telephone' => $telephone,
+            'email' => $email,
+            'mot_de_passe' => $mot_de_passe_hache,
+            'id' => $_SESSION['id']
+        ]);
+
+        // Rediriger vers la page du profil après la mise à jour
+        header('Location: profil.php');
+        exit();
+    }
 }
 ?>
-
-
-
-
 
 <!DOCTYPE html>
 <html lang="fr">
@@ -48,69 +68,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 </head>
 <body>
     <div class="container mt-4">
-        <h2>Profil</h2>
+        <h2>Profil de l'utilisateur</h2>
 
         <!-- Afficher l'erreur s'il y en a -->
         <?php if (isset($error)): ?>
             <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
         <?php endif; ?>
 
+        <!-- Formulaire de mise à jour du profil -->
         <form method="POST" action="">
             <div class="mb-3">
-                    <label for="nom" class="form-label">Nom</label>
-                    <input type="text" class="form-control" id="nom" name="nom" value="<?= htmlspecialchars($user[0]['nom']) ?>" required>
+                <label for="nom" class="form-label">Nom</label>
+                <input type="text" class="form-control" id="nom" name="nom" value="<?= htmlspecialchars($user['nom']) ?>" required>
             </div>
 
             <div class="mb-3">
                 <label for="prenom" class="form-label">Prénom</label>
-                <input type="text" class="form-control" id="prenom" name="prenom" value="<?= htmlspecialchars($user[0]['prenom']) ?>" required>
+                <input type="text" class="form-control" id="prenom" name="prenom" value="<?= htmlspecialchars($user['prenom']) ?>" required>
             </div>
-            
+
             <div class="mb-3">
                 <label for="date_naissance" class="form-label">Date de naissance</label>
-                <input type="date" class="form-control" id="date_naissance" name="date_naissance" value="<?= htmlspecialchars($user[0]['date_naissance']) ?>" required>
+                <input type="date" class="form-control" id="date_naissance" name="date_naissance" value="<?= htmlspecialchars($user['date_naissance']) ?>" required>
             </div>
 
             <div class="mb-3">
                 <label for="adresse" class="form-label">Adresse</label>
-                <input type="text" class="form-control" id="adresse" name="adresse" value="<?= htmlspecialchars($user[0]['adresse']) ?>" required>
-            </div>
-            
-            <div class="mb-3">
-                <label for="telephone" class="form-label">Telephone</label>
-                <input type="text" class="form-control" id="telephone" name="telephone" value="<?= htmlspecialchars($user[0]['telephone']) ?>" required>
+                <input type="text" class="form-control" id="adresse" name="adresse" value="<?= htmlspecialchars($user['adresse']) ?>" required>
             </div>
 
             <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user[0]['email']) ?>" required>
+                <label for="telephone" class="form-label">Téléphone</label>
+                <input type="text" class="form-control" id="telephone" name="telephone" value="<?= htmlspecialchars($user['telephone']) ?>" required>
             </div>
 
             <div class="mb-3">
-                    <label for="mot_de_passe" class="form-label">Mot de passe</label>
-                    <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe" value="<?= htmlspecialchars($user[0]['mot_de_passe']) ?>" required>
-                </div>
+                <label for="email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required>
+            </div>
 
-            <button type="submit" class="btn btn-primary">Modifier</button>
+            <div class="mb-3">
+                <label for="mot_de_passe" class="form-label">Mot de passe</label>
+                <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe" value="<?= htmlspecialchars($user['mot_de_passe']) ?>" required>
+            </div>
 
-            
+            <button type="submit" class="btn btn-primary">Mettre à jour</button>
         </form>
-        
-
-        
-        
     </div>
 
     <div class="container mt-4">
-            <form action="disconect.php" method="POST">
-                <button type="submit" class="btn btn-btn btn-secondary">Deconexion</button>
-            </form>
-        </div>
+        <form action="logout.php" method="POST">
+            <button type="submit" class="btn btn-secondary">Déconnexion</button>
+        </form>
+    </div>
 
-        <div class="container mt-4">
-            <form action="delete.php" method="POST">
-                <button type="submit" class="btn btn-danger">Supprimer Compte</button>
-            </form>
-        </div>
+    <div class="container mt-4">
+        <form action="delete.php" method="POST">
+            <button type="submit" class="btn btn-danger">Supprimer le compte</button>
+        </form>
+    </div>
+
 </body>
 </html>
