@@ -1,6 +1,5 @@
 <?php
 session_start();
-
 require 'config.php';
 
 // Vérifier si l'utilisateur est déjà connecté
@@ -11,16 +10,16 @@ if (isset($_SESSION['username'])) {
 
 // Si le formulaire est soumis
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom= $_POST['nom'];
-    $prenom= $_POST['prenom'];
-    $date_naissance= $_POST['date_naissance'];
-    $adresse= $_POST['adresse'];
-    $telephone= $_POST['telephone'];
+    $nom = $_POST['nom'];
+    $prenom = $_POST['prenom'];
+    $date_naissance = $_POST['date_naissance'];
+    $adresse = $_POST['adresse'];
+    $telephone = $_POST['telephone'];
     $email = $_POST['email'];
     $mot_de_passe = $_POST['mot_de_passe'];
 
     // Vérifier que les champs sont remplis
-    if ( empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email) || empty($mot_de_passe)) {
+    if (empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email) || empty($mot_de_passe)) {
         $error = "Tous les champs doivent être remplis.";
     } else {
         // Vérifier si l'email existe déjà
@@ -29,13 +28,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $existingUser = $stmt->fetch();
 
         if ($existingUser) {
-            $error = "L'adresse mail est déjà utilisé.";
+            $error = "L'adresse mail est déjà utilisée.";
         } else {
-            // Insérer l'utilisateur 
-            $stmt = $pdo->prepare("INSERT INTO users (nom, prenom,date_naissance,adresse,telephone,email,mot_de_passe) 
-            VALUES (:nom, :prenom, :date_naissance,:adresse,:telephone,:email,:mot_de_passe)");
+            // Hash du mot de passe
+            $mot_de_passe_hache = password_hash($mot_de_passe, PASSWORD_BCRYPT);
 
-            $stmt->execute(['nom' => $nom, 'prenom' => $prenom, 'date_naissance'=> $date_naissance,'adresse' => $adresse,'telephone' => $telephone,'email' => $email,'mot_de_passe' => $mot_de_passe ]);
+            // Insérer l'utilisateur 
+            $stmt = $pdo->prepare("INSERT INTO users (nom, prenom, date_naissance, adresse, telephone, email, mot_de_passe) 
+            VALUES (:nom, :prenom, :date_naissance, :adresse, :telephone, :email, :mot_de_passe)");
+
+            $stmt->execute([
+                'nom' => $nom, 
+                'prenom' => $prenom, 
+                'date_naissance' => $date_naissance,
+                'adresse' => $adresse,
+                'telephone' => $telephone,
+                'email' => $email,
+                'mot_de_passe' => $mot_de_passe_hache
+            ]);
 
             // Rediriger vers la page de connexion après la création du compte
             header('Location: login.php');
@@ -63,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <?php endif; ?>
 
         <form method="POST" action="">
-        <div class="mb-3">
+            <div class="mb-3">
                 <label for="nom" class="form-label">Nom</label>
                 <input type="text" class="form-control" id="nom" name="nom" required>
             </div>
