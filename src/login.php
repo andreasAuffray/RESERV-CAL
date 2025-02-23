@@ -1,33 +1,39 @@
-
 <?php
 session_start();
 require 'config.php';
 
-// Vérification de la soumission du formulaire
+// Vérifier si l'utilisateur est connecté
+if (!isset($_SESSION['id'])) {
+    header('Location: login.php');
+    exit();
+}
+
+// Récupérer les données de l'utilisateur connecté
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id");
+$stmt->execute(['id' => $_SESSION['id']]);
+$user = $stmt->fetch();
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $email = $_POST['email'];
-    $mot_de_passe = $_POST['mot_de_passe'];
+    $nom = htmlspecialchars($_POST['nom']);
+    $prenom = htmlspecialchars($_POST['prenom']);
+    $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+    $adresse = htmlspecialchars($_POST['adresse']);
+    $telephone = htmlspecialchars($_POST['telephone']);
 
-    // Vérification des identifiants dans la base de données
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email AND mot_de_passe = :mot_de_passe");
-    $stmt->execute(['email' => $email, 'mot_de_passe' => $mot_de_passe]);
-    $user = $stmt->fetch();
-
-    // Si l'utilisateur existe
-    if ($user) {
-        // Démarrer la session et enregistrer les informations de l'utilisateur
-        $_SESSION['id'] = $user['id'];
-        $_SESSION['email'] = $user['email'];
-
-        // Rediriger vers le login
-        header('Location: profil.php');
-        exit();
+    // Vérifier si un mot de passe a été renseigné pour mise à jour
+    if (!empty($_POST['mot_de_passe'])) {
+        $mot_de_passe = password_hash($_POST['mot_de_passe'], PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, adresse = ?, telephone = ?, mot_de_passe = ? WHERE id = ?");
+        $stmt->execute([$nom, $prenom, $email, $adresse, $telephone, $mot_de_passe, $_SESSION['id']]);
     } else {
-        // Message d'erreur si les identifiants sont incorrects
-        $error = "Email ou mot de passe incorrect.";
+        $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, adresse = ?, telephone = ? WHERE id = ?");
+        $stmt->execute([$nom, $prenom, $email, $adresse, $telephone, $_SESSION['id']]);
     }
+
+    header('Location: profil.php');
 }
 ?>
+
 
 <!DOCTYPE html>
 <html lang="fr">

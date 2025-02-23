@@ -1,45 +1,39 @@
 <?php
-require 'config.php';
 session_start();
+require 'config.php';
 
+// Vérifier si l'utilisateur est connecté
+if (!isset($_SESSION['id'])) {
+    header('Location: login.php');
+    exit();
+}
 
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id ");
-    $stmt->execute(['id' => $_SESSION['id']]);
-    $user = $stmt->fetchAll();
+// Récupérer les données de l'utilisateur connecté
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id");
+$stmt->execute(['id' => $_SESSION['id']]);
+$user = $stmt->fetch();
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $nom = htmlspecialchars($_POST['nom']);
+    $prenom = htmlspecialchars($_POST['prenom']);
+    $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+    $adresse = htmlspecialchars($_POST['adresse']);
+    $telephone = htmlspecialchars($_POST['telephone']);
 
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $nom= $_POST['nom'];
-        $prenom= $_POST['prenom'];
-        $date_naissance= $_POST['date_naissance'];
-        $adresse= $_POST['adresse'];
-        $telephone= $_POST['telephone'];
-        $email = $_POST['email'];
-        $mot_de_passe = $_POST['mot_de_passe'];
-    
-        // Vérifier que les champs sont remplis
-        if ( empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email) || empty($mot_de_passe)) {
-            $error = "Tous les champs doivent être remplis.";
-        } else {
-            $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email");
-            $stmt->execute(['email' => $email]);
-            $existingUser = $stmt->fetch();
-    
-            if ($existingUser) {
-                $error = "L'adresse mail est déjà utilisé.";
-            } else {
-                // Modifier
-                $stmt = $pdo->prepare("UPDATE users SET nom=:nom, prenom=:prenom,date_naissance=:date_naissance,
-                adresse=:adresse,telephone=:telephone,email=:email,mot_de_passe=:mot_de_passe WHERE id=:id");
-    
-                $stmt->execute(['nom' => $nom, 'prenom' => $prenom, 'date_naissance'=> $date_naissance,'adresse' => $adresse,'telephone' => $telephone,'email' => $email,'mot_de_passe' => $mot_de_passe, 'id'=>$_SESSION['id'] ]);
-                header('Location: profil.php');
-
-               
-            }
-        }
+    // Vérifier si un mot de passe a été renseigné pour mise à jour
+    if (!empty($_POST['mot_de_passe'])) {
+        $mot_de_passe = password_hash($_POST['mot_de_passe'], PASSWORD_DEFAULT);
+        $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, adresse = ?, telephone = ?, mot_de_passe = ? WHERE id = ?");
+        $stmt->execute([$nom, $prenom, $email, $adresse, $telephone, $mot_de_passe, $_SESSION['id']]);
+    } else {
+        $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, adresse = ?, telephone = ? WHERE id = ?");
+        $stmt->execute([$nom, $prenom, $email, $adresse, $telephone, $_SESSION['id']]);
     }
-    ?>
+
+    header('Location: profil.php');
+}
+?>
+
 
 
 
