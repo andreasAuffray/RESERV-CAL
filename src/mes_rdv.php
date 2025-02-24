@@ -19,6 +19,8 @@ $rdvs = $stmt->fetchAll();
 <head>
     <meta charset="UTF-8">
     <title>Mes rendez-vous</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
 </head>
 <body>
     <h2>Mes Rendez-vous</h2>
@@ -32,8 +34,14 @@ $rdvs = $stmt->fetchAll();
             <tr>
                 <td><?= htmlspecialchars($rdv['date_rdv']) ?></td>
                 <td><?= htmlspecialchars($rdv['heure_rdv']) ?></td>
-                <td><a href="annuler.php?id=<?= $rdv['id'] ?>">Annuler</a></td>
+                <td>
+                    <form action="annuler.php" method="POST">
+                        <input type="hidden" name="reservation_id" value=<?= $rdv['id'] ?>> 
+                        <button type="submit" class="btn btn-danger">Annuler la réservation</button>
+                    </form>
+                </td>
             </tr>
+            
         <?php endforeach; ?>
     </table>
 </body>
