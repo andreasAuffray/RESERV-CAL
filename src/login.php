@@ -23,6 +23,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Démarrer la session et enregistrer les informations de l'utilisateur
         $_SESSION['id'] = $user['id'];
         $_SESSION['email'] = $user['email'];
+        $_SESSION['nom'] = $user['nom'];
+        $_SESSION['prenom'] = $user['prenom'];
+
+
 
         // Rediriger vers le profil ou l'accueil
         header('Location: profil.php');
