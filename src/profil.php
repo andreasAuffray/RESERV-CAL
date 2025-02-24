@@ -117,15 +117,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <div class="container mt-4">
-        <form action="logout.php" method="POST">
-            <button type="submit" class="btn btn-secondary">Déconnexion</button>
-        </form>
+        
+        <button type="" class="btn btn-secondary"><a href="disconect.php">Déconnexion</a></button>
+        
     </div>
 
     <div class="container mt-4">
-        <form action="delete.php" method="POST">
             <button type="submit" class="btn btn-danger">Supprimer le compte</button>
-        </form>
+    </div>
+
+    <div class="container mt-4">
+        
+        <button type="" class="btn btn-secondary"><a href="index.php">Prendre rendez_vous</a></button>
+        
+    </div>
+
+    <div class="container mt-4">
+        
+        <button type="" class="btn btn-secondary"><a href="mes_rdv.php">Mes reservations</a></button>
+        
     </div>
 
 </body>
