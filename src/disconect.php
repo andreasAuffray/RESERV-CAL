@@ -1,8 +1,18 @@
 <?php
-    session_start();
-    require 'config.php';
-    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    session_destroy();
-    header('Location: login.php');
+session_start();
+
+if (!isset($_SESSION['id'])) {
+    header('Location: login.php');  
+    exit();
 }
+
+
+session_unset();
+
+// Détruire la session
+session_destroy();
+
+
+header('Location: index.php');  
+exit();
 ?>
