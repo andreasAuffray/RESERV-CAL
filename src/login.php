@@ -2,38 +2,37 @@
 session_start();
 require 'config.php';
 
-// Vérifier si l'utilisateur est connecté
-if (!isset($_SESSION['id'])) {
-    header('Location: login.php');
+// Si l'utilisateur est déjà connecté, rediriger vers le profil ou la page d'accueil
+if (isset($_SESSION['id'])) {
+    header('Location: profil.php'); // ou index.php si vous voulez le rediriger vers l'accueil
     exit();
 }
 
-// Récupérer les données de l'utilisateur connecté
-$stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id");
-$stmt->execute(['id' => $_SESSION['id']]);
-$user = $stmt->fetch();
-
+// Vérification de la soumission du formulaire
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = htmlspecialchars($_POST['nom']);
-    $prenom = htmlspecialchars($_POST['prenom']);
-    $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
-    $adresse = htmlspecialchars($_POST['adresse']);
-    $telephone = htmlspecialchars($_POST['telephone']);
+    $email = $_POST['email'];
+    $mot_de_passe = $_POST['mot_de_passe'];
 
-    // Vérifier si un mot de passe a été renseigné pour mise à jour
-    if (!empty($_POST['mot_de_passe'])) {
-        $mot_de_passe = password_hash($_POST['mot_de_passe'], PASSWORD_DEFAULT);
-        $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, adresse = ?, telephone = ?, mot_de_passe = ? WHERE id = ?");
-        $stmt->execute([$nom, $prenom, $email, $adresse, $telephone, $mot_de_passe, $_SESSION['id']]);
+    // Vérification des identifiants dans la base de données
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email");
+    $stmt->execute(['email' => $email]);
+    $user = $stmt->fetch();
+
+    // Si l'utilisateur existe et le mot de passe est correct
+    if ($user && password_verify($mot_de_passe, $user['mot_de_passe'])) {
+        // Démarrer la session et enregistrer les informations de l'utilisateur
+        $_SESSION['id'] = $user['id'];
+        $_SESSION['email'] = $user['email'];
+
+        // Rediriger vers le profil ou l'accueil
+        header('Location: profil.php');
+        exit();
     } else {
-        $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, email = ?, adresse = ?, telephone = ? WHERE id = ?");
-        $stmt->execute([$nom, $prenom, $email, $adresse, $telephone, $_SESSION['id']]);
+        // Message d'erreur si les identifiants sont incorrects
+        $error = "Email ou mot de passe incorrect.";
     }
-
-    header('Location: profil.php');
 }
 ?>
-
 
 <!DOCTYPE html>
 <html lang="fr">
