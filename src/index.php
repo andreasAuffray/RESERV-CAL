@@ -29,8 +29,8 @@ $semaineSuivante = date("Y-m-d", strtotime("+1 week", strtotime($lundi)));
         <?php if (!$isConnected): ?>
             <a href="login.php" class="btn btn-primary">Se connecter</a>
         <?php else: ?>
-            <p>Connecté en tant que <strong><?= htmlspecialchars($_SESSION['nom']) ?></strong> <strong><?= htmlspecialchars($_SESSION['prenom']) ?></strong> 
-                (<a href="disconect.php">Déconnexion</a>)
+            <p>Connecté en tant que <a href="profil.php"><strong><?= htmlspecialchars($_SESSION['nom']) ?></strong> <strong><?= htmlspecialchars($_SESSION['prenom']) ?></strong> 
+                <br/>(<a href="disconect.php">Déconnexion</a>)
             </p>
         <?php endif; ?>
 
