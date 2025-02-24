@@ -1,82 +1,84 @@
 <?php
 session_start();
-include 'config.php'; // Connexion à la base de données
+require 'config.php';
 
-// Récupérer la semaine demandée (ou la semaine actuelle)
-$semaine = isset($_GET['semaine']) ? $_GET['semaine'] : date("W");
-$annee = isset($_GET['annee']) ? $_GET['annee'] : date("Y");
+$isConnected = isset($_SESSION['id']);
+$dateActuelle = isset($_GET['date']) ? $_GET['date'] : date("Y-m-d");
 
-// Déterminer le premier jour de la semaine sélectionnée
-$dateDebut = new DateTime();
-$dateDebut->setISODate($annee, $semaine);
-$dateFin = clone $dateDebut;
-$dateFin->modify('+6 days');
+// Calculer la première date de la semaine en cours
+$lundi = date("Y-m-d", strtotime('monday this week', strtotime($dateActuelle)));
+$dimanche = date("Y-m-d", strtotime('sunday this week', strtotime($dateActuelle)));
 
-// Liste des jours de la semaine
-$jours = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
-
-// Génération des boutons de navigation
-$semainePrecedente = $semaine - 1;
-$semaineSuivante = $semaine + 1;
+// Navigation entre les semaines
+$semainePrecedente = date("Y-m-d", strtotime("-1 week", strtotime($lundi)));
+$semaineSuivante = date("Y-m-d", strtotime("+1 week", strtotime($lundi)));
 ?>
 
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>Calendrier des Réservations</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
-        h2 { color: #333; }
-        .navigation { margin-bottom: 20px; }
-        .navigation a { padding: 10px 20px; background: #3498db; color: white; text-decoration: none; border-radius: 5px; margin: 5px; }
-        .navigation a:hover { background: #2980b9; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid #ccc; padding: 10px; text-align: center; }
-        th { background: #f8f8f8; }
-        .btn-reserver { display: block; padding: 5px; background: #2ecc71; color: white; text-decoration: none; border-radius: 5px; margin-top: 5px; }
-        .btn-reserver:hover { background: #27ae60; }
-    </style>
+    <title>Calendrier</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
+    <div class="container">
+        <h2 class="my-3">Calendrier des Rendez-vous</h2>
 
-<h2>Semaine du <?= $dateDebut->format("d/m/Y") ?> au <?= $dateFin->format("d/m/Y") ?></h2>
+        <!-- Afficher connexion ou déconnexion -->
+        <?php if (!$isConnected): ?>
+            <a href="login.php" class="btn btn-primary">Se connecter</a>
+        <?php else: ?>
+            <p>Connecté en tant que <strong><?= htmlspecialchars($_SESSION['email']) ?></strong> 
+                (<a href="disconect.php">Déconnexion</a>)
+            </p>
+        <?php endif; ?>
 
-<div class="navigation">
-    <a href="?semaine=<?= $semainePrecedente ?>&annee=<?= $annee ?>">⏪ Semaine Précédente</a>
-    <a href="?semaine=<?= date("W") ?>&annee=<?= date("Y") ?>">📅 Aujourd'hui</a>
-    <a href="?semaine=<?= $semaineSuivante ?>&annee=<?= $annee ?>">Semaine Suivante ⏩</a>
-</div>
+        <!-- Navigation entre les semaines -->
+        <div class="d-flex justify-content-between my-3">
+            <a href="index.php?date=<?= $semainePrecedente ?>" class="btn btn-outline-secondary">← Semaine précédente</a>
+            <span class="fw-bold">Semaine du <?= date("d/m/Y", strtotime($lundi)) ?> au <?= date("d/m/Y", strtotime($dimanche)) ?></span>
+            <a href="index.php?date=<?= $semaineSuivante ?>" class="btn btn-outline-secondary">Semaine suivante →</a>
+        </div>
 
-<table>
-    <tr>
-        <th>Jour</th>
-        <?php foreach (range(8, 17) as $heure) { echo "<th>$heure:00</th>"; } ?>
-    </tr>
-    <?php
-    foreach ($jours as $index => $jourNom) {
-        $date = $dateDebut->format("Y-m-d");
-        echo "<tr><td><b>$jourNom</b><br><small>$date</small></td>";
+        <!-- Affichage du calendrier -->
+        <table class="table table-bordered">
+            <tr>
+                <th>Jour</th>
+                <?php for ($i = 0; $i < 7; $i++): ?>
+                    <th><?= date("D d/m", strtotime("+$i day", strtotime($lundi))) ?></th>
+                <?php endfor; ?>
+            </tr>
 
-        foreach (range(8, 17) as $heure) {
-            $heureFormat = str_pad($heure, 2, "0", STR_PAD_LEFT) . ":00:00";
+            <!-- Créneaux horaires -->
+            <?php for ($heure = 8; $heure <= 17; $heure++): ?>
+                <tr>
+                    <td><?= $heure ?>:00</td>
+                    <?php for ($i = 0; $i < 7; $i++): ?>
+                        <?php 
+                        $date = date("Y-m-d", strtotime("+$i day", strtotime($lundi)));
+                        $heureFormat = str_pad($heure, 2, "0", STR_PAD_LEFT) . ":00:00";
 
-            // Vérifier si le créneau est réservé
-            $stmt = $pdo->prepare("SELECT * FROM reservations WHERE date_rdv = ? AND heure_rdv = ?");
-            $stmt->execute([$date, $heureFormat]);
-            $estReserve = $stmt->rowCount() > 0;
-
-            if ($estReserve) {
-                echo "<td style='background: #e74c3c; color: white;'>Réservé</td>";
-            } else {
-                echo "<td><a href='reserver.php?date=$date&heure=$heureFormat' class='btn-reserver'>Réserver</a></td>";
-            }
-        }
-        echo "</tr>";
-        $dateDebut->modify('+1 day');
-    }
-    ?>
-</table>
-
+                        // Vérifier si le créneau est déjà réservé
+                        $stmt = $pdo->prepare("SELECT * FROM reservations WHERE date_rdv = ? AND heure_rdv = ?");
+                        $stmt->execute([$date, $heureFormat]);
+                        $estReserve = $stmt->fetch();
+                        ?>
+                        <td>
+                            <?php if ($isConnected): ?>
+                                <?php if ($estReserve): ?>
+                                    <button class="btn btn-danger btn-sm" disabled>Réservé</button>
+                                <?php else: ?>
+                                    <a href="reserver.php?date=<?= $date ?>&heure=<?= $heureFormat ?>" class="btn btn-success btn-sm">Réserver</a>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <a href="login.php" class="btn btn-warning btn-sm">Connexion requise</a>
+                            <?php endif; ?>
+                        </td>
+                    <?php endfor; ?>
+                </tr>
+            <?php endfor; ?>
+        </table>
+    </div>
 </body>
 </html>
