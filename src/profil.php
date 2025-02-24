@@ -123,7 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </div>
 
     <div class="container mt-4">
-            <button type="submit" class="btn btn-danger">Supprimer le compte</button>
+        <form method="POST" action="delete.php">
+            <button type="submit"  class="btn btn-danger">Supprimer le compte</button>
+        </form>
     </div>
 
     <div class="container mt-4">
