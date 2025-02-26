@@ -1,24 +1,18 @@
 <?php
-session_start();
 require 'config.php';
+require 'csrf.php';
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reservation_id'])) {
-    $reservation_id = $_POST['reservation_id'];
-
-    try {
-        $stmt = $pdo->prepare("DELETE FROM reservations WHERE id = :reservation_id AND user_id = :user_id");
-        $stmt->execute([
-            'reservation_id' => $reservation_id,
-            'user_id' => $_SESSION['id']
-        ]);
-
-    
-    } catch (Exception $e) {
-        echo "Erreur : " . $e->getMessage();
+if ($_SERVER["REQUEST_METHOD"] == "POST") {
+    if (!verifyCsrfToken($_POST['csrf_token'])) {
+        die("Token CSRF invalide !");
     }
-} else {
-    echo "Requête invalide.";
-}
-header('Location: index.php');
 
+    require 'config.php';
+
+    $stmt = $pdo->prepare("DELETE FROM reservations WHERE id = ? AND user_id = ?");
+    $stmt->execute([$_POST['reservation_id'], $_SESSION['id']]);
+
+    header('Location: mes_rdv.php');
+    exit();
+}
 ?>

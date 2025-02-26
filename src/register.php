@@ -1,41 +1,43 @@
 <?php
 session_start();
 require 'config.php';
+require 'csrf.php';
+require 'navbar.php';
 
-// Vérifier si l'utilisateur est déjà connecté
-if (isset($_SESSION['username'])) {
-    header('Location: index.php');
-    exit();
-}
-
-// Si le formulaire est soumis
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = $_POST['nom'];
-    $prenom = $_POST['prenom'];
+    if (!verifyCsrfToken($_POST['csrf_token'])) {
+        die("Token CSRF invalide !");
+    }
+
+    $nom = htmlspecialchars($_POST['nom']);
+    $prenom = htmlspecialchars($_POST['prenom']);
     $date_naissance = $_POST['date_naissance'];
-    $adresse = $_POST['adresse'];
-    $telephone = $_POST['telephone'];
-    $email = $_POST['email'];
+    $adresse = htmlspecialchars($_POST['adresse']);
+    $telephone = htmlspecialchars($_POST['telephone']);
+    $email = $_POST['email']; 
     $mot_de_passe = $_POST['mot_de_passe'];
 
-    // Vérifier que les champs sont remplis
+    // Vérification des champs
     if (empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email) || empty($mot_de_passe)) {
         $error = "Tous les champs doivent être remplis.";
     } else {
-        // Vérifier si l'email existe déjà
+        // Vérification si l'email existe déjà
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email");
         $stmt->execute(['email' => $email]);
         $existingUser = $stmt->fetch();
 
         if ($existingUser) {
-            $error = "L'adresse mail est déjà utilisée.";
+            $error = "L'adresse email est déjà utilisée.";
         } else {
-            // Hash du mot de passe
+            // Hacher le mot de passe
             $mot_de_passe_hache = password_hash($mot_de_passe, PASSWORD_BCRYPT);
 
-            // Insérer l'utilisateur 
-            $stmt = $pdo->prepare("INSERT INTO users (nom, prenom, date_naissance, adresse, telephone, email, mot_de_passe) 
-            VALUES (:nom, :prenom, :date_naissance, :adresse, :telephone, :email, :mot_de_passe)");
+            // Générer un code d'activation
+            $activation_code = bin2hex(random_bytes(16));  // Générer un code aléatoire
+
+            // Insérer l'utilisateur dans la base de données avec is_verified = 0 (inactif)
+            $stmt = $pdo->prepare("INSERT INTO users (nom, prenom, date_naissance, adresse, telephone, email, mot_de_passe, is_verified, verification_token) 
+            VALUES (:nom, :prenom, :date_naissance, :adresse, :telephone, :email, :mot_de_passe, 0, :verification_token)");
 
             $stmt->execute([
                 'nom' => $nom, 
@@ -44,74 +46,84 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'adresse' => $adresse,
                 'telephone' => $telephone,
                 'email' => $email,
-                'mot_de_passe' => $mot_de_passe_hache
+                'mot_de_passe' => $mot_de_passe_hache,
+                'verification_token' => $activation_code
             ]);
 
-            // Rediriger vers la page de connexion après la création du compte
-            header('Location: login.php');
-            exit();
+            // Envoyer un email de vérification
+            $subject = "Vérification de votre compte";
+            $message = "Cliquez sur le lien suivant pour activer votre compte :\n";
+            $message .= "http://localhost/ton_dossier/activate.php?token=" . $activation_code;
+            $headers = "From: ton-email@gmail.com" . "\r\n" .
+                       "Reply-To: ton-email@gmail.com" . "\r\n" .
+                       "X-Mailer: PHP/" . phpversion();
+
+            // Envoi de l'email
+            if(mail($email, $subject, $message, $headers)) {
+                header('Location: login.php');
+                exit();
+            } else {
+                $error = "Une erreur est survenue lors de l'envoi de l'email.";
+            }
         }
     }
 }
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Création de compte</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-4">
-        <h2>Créer un compte</h2>
+<body class="bg-light">
+    <div class="container mt-5">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title">Créer un compte</h2>
 
-        <!-- Afficher l'erreur s'il y en a -->
-        <?php if (isset($error)): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
+                <?php if (isset($error)): ?>
+                    <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+                <?php endif; ?>
 
-        <form method="POST" action="">
-            <div class="mb-3">
-                <label for="nom" class="form-label">Nom</label>
-                <input type="text" class="form-control" id="nom" name="nom" required>
+                <form method="POST">
+                    <input type="hidden" name="csrf_token" value="<?= $_SESSION['csrf_token'] ?>">
+
+                    <div class="mb-3">
+                        <label for="nom" class="form-label">Nom</label>
+                        <input type="text" class="form-control" id="nom" name="nom" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="prenom" class="form-label">Prénom</label>
+                        <input type="text" class="form-control" id="prenom" name="prenom" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="date_naissance" class="form-label">Date de naissance</label>
+                        <input type="date" class="form-control" id="date_naissance" name="date_naissance" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="adresse" class="form-label">Adresse</label>
+                        <input type="text" class="form-control" id="adresse" name="adresse" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="telephone" class="form-label">Numéro de téléphone</label>
+                        <input type="text" class="form-control" id="telephone" name="telephone" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="mot_de_passe" class="form-label">Mot de passe</label>
+                        <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Créer un compte</button>
+                    <a href="login.php" class="btn btn-link">Déjà un compte ?</a>
+                </form>
+
             </div>
-
-            <div class="mb-3">
-                <label for="prenom" class="form-label">Prénom</label>
-                <input type="text" class="form-control" id="prenom" name="prenom" required>
-            </div>
-            
-            <div class="mb-3">
-                <label for="date_naissance" class="form-label">Date de naissance</label>
-                <input type="date" class="form-control" id="date_naissance" name="date_naissance" required>
-            </div>
-
-            <div class="mb-3">
-                <label for="adresse" class="form-label">Adresse</label>
-                <input type="text" class="form-control" id="adresse" name="adresse" required>
-            </div>
-            
-            <div class="mb-3">
-                <label for="telephone" class="form-label">Telephone</label>
-                <input type="text" class="form-control" id="telephone" name="telephone" required>
-            </div>
-
-            <div class="mb-3">
-                    <label for="email" class="form-label">Email</label>
-                    <input type="email" class="form-control" id="email" name="email" required>
-            </div>
-
-            <div class="mb-3">
-                    <label for="mot_de_passe" class="form-label">Mot de passe</label>
-                    <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe" required>
-                </div>
-
-            <button type="submit" class="btn btn-primary">Créer le compte</button>
-        </form>
-
-        <p class="mt-3">Déjà un compte ? <a href="login.php">Se connecter</a></p>
+        </div>
     </div>
 </body>
 </html>
