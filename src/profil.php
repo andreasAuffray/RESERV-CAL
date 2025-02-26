@@ -1,144 +1,114 @@
 <?php
 session_start();
 require 'config.php';
+require 'csrf.php';
+include 'navbar.php';
 
-// Vérifier si l'utilisateur est connecté
 if (!isset($_SESSION['id'])) {
     header('Location: login.php');
     exit();
 }
 
-// Récupérer les informations de l'utilisateur connecté
-$stmt = $pdo->prepare("SELECT * FROM users WHERE id = :id");
-$stmt->execute(['id' => $_SESSION['id']]);
-$user = $stmt->fetch();  // Notez qu'on utilise fetch() et non fetchAll()
-
-// Vérifier si l'utilisateur existe
-if (!$user) {
-    // Si l'utilisateur n'existe pas, rediriger vers la page de connexion
-    header('Location: login.php');
-    exit();
-}
+$userId = $_SESSION['id'];
+$error = ''; // Initialisation de la variable $error
+$success = ''; // Initialisation de la variable $success
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $nom = $_POST['nom'];
-    $prenom = $_POST['prenom'];
+    // Vérification du token CSRF
+    if (!verifyCsrfToken($_POST['csrf_token'])) {
+        die("Token CSRF invalide !");
+    }
+
+    // Récupérer les valeurs du formulaire
+    $nom = htmlspecialchars($_POST['nom']);
+    $prenom = htmlspecialchars($_POST['prenom']);
     $date_naissance = $_POST['date_naissance'];
-    $adresse = $_POST['adresse'];
-    $telephone = $_POST['telephone'];
+    $adresse = htmlspecialchars($_POST['adresse']);
+    $telephone = htmlspecialchars($_POST['telephone']);
     $email = $_POST['email'];
     $mot_de_passe = $_POST['mot_de_passe'];
 
-    // Vérifier que les champs sont remplis
-    if (empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email) || empty($mot_de_passe)) {
+    // Vérification du mot de passe et des champs
+    if (empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email)) {
         $error = "Tous les champs doivent être remplis.";
     } else {
-        // Hash du mot de passe
-        $mot_de_passe_hache = password_hash($mot_de_passe, PASSWORD_BCRYPT);
+        if (!empty($mot_de_passe)) {
+            // Si le mot de passe est changé, on le hache
+            $mot_de_passe_hache = password_hash($mot_de_passe, PASSWORD_BCRYPT);
+            $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, date_naissance = ?, adresse = ?, telephone = ?, email = ?, mot_de_passe = ? WHERE id = ?");
+            $stmt->execute([$nom, $prenom, $date_naissance, $adresse, $telephone, $email, $mot_de_passe_hache, $userId]);
+        } else {
+            // Si le mot de passe n'est pas changé
+            $stmt = $pdo->prepare("UPDATE users SET nom = ?, prenom = ?, date_naissance = ?, adresse = ?, telephone = ?, email = ? WHERE id = ?");
+            $stmt->execute([$nom, $prenom, $date_naissance, $adresse, $telephone, $email, $userId]);
+        }
 
-        // Mise à jour des informations de l'utilisateur
-        $stmt = $pdo->prepare("UPDATE users SET nom = :nom, prenom = :prenom, date_naissance = :date_naissance, adresse = :adresse, 
-            telephone = :telephone, email = :email, mot_de_passe = :mot_de_passe WHERE id = :id");
-
-        $stmt->execute([
-            'nom' => $nom,
-            'prenom' => $prenom,
-            'date_naissance' => $date_naissance,
-            'adresse' => $adresse,
-            'telephone' => $telephone,
-            'email' => $email,
-            'mot_de_passe' => $mot_de_passe_hache,
-            'id' => $_SESSION['id']
-        ]);
-
-        // Rediriger vers la page du profil après la mise à jour
-        header('Location: profil.php');
-        exit();
+        $success = "Vos informations ont été mises à jour avec succès.";
     }
 }
+
+// Récupérer les informations actuelles de l'utilisateur
+$stmt = $pdo->prepare("SELECT * FROM users WHERE id = ?");
+$stmt->execute([$userId]);
+$user = $stmt->fetch();
 ?>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Profil</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body>
-    <div class="container mt-4">
-        <h2>Profil de l'utilisateur</h2>
+<div class="container mt-5">
+    <h2>Mon profil</h2>
 
-        <!-- Afficher l'erreur s'il y en a -->
-        <?php if (isset($error)): ?>
-            <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
+    <?php if ($success): ?>
+        <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
+    <?php endif; ?>
 
-        <!-- Formulaire de mise à jour du profil -->
-        <form method="POST" action="">
-            <div class="mb-3">
-                <label for="nom" class="form-label">Nom</label>
-                <input type="text" class="form-control" id="nom" name="nom" value="<?= htmlspecialchars($user['nom']) ?>" required>
-            </div>
+    <?php if ($error): ?>
+        <div class="alert alert-danger"><?= htmlspecialchars($error) ?></div>
+    <?php endif; ?>
 
-            <div class="mb-3">
-                <label for="prenom" class="form-label">Prénom</label>
-                <input type="text" class="form-control" id="prenom" name="prenom" value="<?= htmlspecialchars($user['prenom']) ?>" required>
-            </div>
+    <form method="POST">
+        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken(); ?>">
 
-            <div class="mb-3">
-                <label for="date_naissance" class="form-label">Date de naissance</label>
-                <input type="date" class="form-control" id="date_naissance" name="date_naissance" value="<?= htmlspecialchars($user['date_naissance']) ?>" required>
-            </div>
+        <div class="mb-3">
+            <label for="nom" class="form-label">Nom</label>
+            <input type="text" class="form-control" id="nom" name="nom" value="<?= htmlspecialchars($user['nom']) ?>" required>
+        </div>
 
-            <div class="mb-3">
-                <label for="adresse" class="form-label">Adresse</label>
-                <input type="text" class="form-control" id="adresse" name="adresse" value="<?= htmlspecialchars($user['adresse']) ?>" required>
-            </div>
+        <div class="mb-3">
+            <label for="prenom" class="form-label">Prénom</label>
+            <input type="text" class="form-control" id="prenom" name="prenom" value="<?= htmlspecialchars($user['prenom']) ?>" required>
+        </div>
 
-            <div class="mb-3">
-                <label for="telephone" class="form-label">Téléphone</label>
-                <input type="text" class="form-control" id="telephone" name="telephone" value="<?= htmlspecialchars($user['telephone']) ?>" required>
-            </div>
+        <div class="mb-3">
+            <label for="date_naissance" class="form-label">Date de naissance</label>
+            <input type="date" class="form-control" id="date_naissance" name="date_naissance" value="<?= $user['date_naissance'] ?>" required>
+        </div>
 
-            <div class="mb-3">
-                <label for="email" class="form-label">Email</label>
-                <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required>
-            </div>
+        <div class="mb-3">
+            <label for="adresse" class="form-label">Adresse</label>
+            <input type="text" class="form-control" id="adresse" name="adresse" value="<?= htmlspecialchars($user['adresse']) ?>" required>
+        </div>
 
-            <div class="mb-3">
-                <label for="mot_de_passe" class="form-label">Mot de passe</label>
-                <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe" value="<?= htmlspecialchars($user['mot_de_passe']) ?>" required>
-            </div>
+        <div class="mb-3">
+            <label for="telephone" class="form-label">Numéro de téléphone</label>
+            <input type="tel" class="form-control" id="telephone" name="telephone" value="<?= htmlspecialchars($user['telephone']) ?>" required>
+        </div>
 
-            <button type="submit" class="btn btn-primary">Mettre à jour</button>
-        </form>
-    </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" name="email" value="<?= htmlspecialchars($user['email']) ?>" required>
+        </div>
 
-    <div class="container mt-4">
-        
-        <button type="" class="btn btn-secondary"><a href="disconect.php">Déconnexion</a></button>
-        
-    </div>
+        <div class="mb-3">
+            <label for="mot_de_passe" class="form-label">Mot de passe (laisser vide si inchangé)</label>
+            <input type="password" class="form-control" id="mot_de_passe" name="mot_de_passe">
+        </div>
 
-    <div class="container mt-4">
-        <form method="POST" action="delete.php">
-            <button type="submit"  class="btn btn-danger">Supprimer le compte</button>
-        </form>
-    </div>
+        <button type="submit" class="btn btn-primary w-100">Mettre à jour le profil</button>
+    </form>
 
-    <div class="container mt-4">
-        
-        <button type="" class="btn btn-secondary"><a href="index.php">Prendre rendez_vous</a></button>
-        
-    </div>
-
-    <div class="container mt-4">
-        
-        <button type="" class="btn btn-secondary"><a href="mes_rdv.php">Mes reservations</a></button>
-        
-    </div>
-
+    <form action="delete.php" method="POST" class="mt-4">
+        <input type="hidden" name="csrf_token" value="<?= generateCsrfToken(); ?>">
+        <button type="submit" class="btn btn-danger w-100">Supprimer mon compte</button>
+    </form>
+</div>
 </body>
 </html>
