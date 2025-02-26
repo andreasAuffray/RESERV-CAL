@@ -19,6 +19,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['reservation_id'])) {
 } else {
     echo "Requête invalide.";
 }
-header('Location: mes_rdv.php');
+header('Location: index.php');
 
 ?>
