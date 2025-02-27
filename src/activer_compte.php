@@ -3,7 +3,7 @@
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $code= htmlspecialchars($_POST['code']);
 
-        $stmt = $pdo->prepare("UPDATE users SET is_verified = 1 WHERE verification_token = :verification_token");
+        $stmt = $pdo->prepare("UPDATE users SET is_verified = 1 WHERE ((verification_token = :verification_token) and (is_verified = 0 ))");
         $stmt->execute(['verification_token' => $code]);
         header('Location: login.php');
          
