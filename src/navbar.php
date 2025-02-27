@@ -20,6 +20,7 @@
                     <li class="nav-item"><a class="nav-link" href="index.php">Accueil</a></li>
                     <li class="nav-item"><a class="nav-link" href="reserver.php">Prendre RDV</a></li>
                     <li class="nav-item"><a class="nav-link" href="mes_rdv.php">Mes RDV</a></li>
+                    <li class="nav-item"><a class="nav-link" href="contact.php">Contact</a></li>
                     
                     <?php if (isset($_SESSION['id'])): ?>
                         <li class="nav-item"><a class="nav-link" href="profil.php">Mon Profil</a></li>
