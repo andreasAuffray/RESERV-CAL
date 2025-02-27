@@ -1,8 +1,9 @@
 <?php
-require 'config.php';
-require 'csrf.php';
+require 'config.php'; 
+require 'csrf.php'; 
 require 'navbar.php';
 
+// Inclusion des fichiers de PHPMailer
 require 'C:\Users\andre\Documents\PHPMailer-master\PHPMailer-master\src\Exception.php';  
 require 'C:\Users\andre\Documents\PHPMailer-master\PHPMailer-master\src\PHPMailer.php';  
 require 'C:\Users\andre\Documents\PHPMailer-master\PHPMailer-master\src\SMTP.php'; 
@@ -10,16 +11,21 @@ require 'C:\Users\andre\Documents\PHPMailer-master\PHPMailer-master\src\SMTP.php
 use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\Exception;
 
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    
-
-    $nom = htmlspecialchars($_POST['name']);
-    $email = $_POST['email'];
-    $message= htmlspecialchars($_POST['message']) ;
-    
-    $mail = new PHPMailer(true);
-
     try {
+        // Validation du token CSRF
+        if (!verifyCsrfToken($_POST['csrf_token'])) {
+            die("Token CSRF invalide !");
+        }
+
+        // Assainir et récupérer les données
+        $nom = htmlspecialchars($_POST['name']);
+        $email = htmlspecialchars($_POST['email']); // Assainir l'email avec htmlspecialchars
+        $message = htmlspecialchars($_POST['message']);
+
+        // Configurer PHPMailer
+        $mail = new PHPMailer(true);
         $mail->isSMTP();
         $mail->Host = 'smtp.gmail.com';
         $mail->SMTPAuth = true;
@@ -27,10 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $mail->Password = 'axsj xgmu xpib isoo';
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port = 587;
-
-        // Activer le débogage
-
-        // Ajouter les options SMTP
+        
+        // Options SMTP pour ignorer les erreurs SSL (optionnel)
         $mail->SMTPOptions = array(
             'ssl' => array(
                 'verify_peer' => false,
@@ -41,19 +45,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $mail->setFrom('webreservcall@gmail.com', 'reservcall');
         $mail->addAddress('webreservcall@gmail.com', 'reservcall');
-
         $mail->isHTML(true);
         $mail->Subject = 'Contact';
         $mail->Body    = "Adresse mail : ".$email."<br><br> Message : ".$message;
 
+        // Envoyer l'email
         $mail->send();
         echo 'E-mail envoyé avec succès.';
     } catch (Exception $e) {
+        // Gérer les erreurs de PHPMailer
         echo "L'envoi de l'e-mail a échoué. Erreur Mailer: {$mail->ErrorInfo}";
+    } catch (Exception $e) {
+        // Gérer les erreurs de validation du token CSRF
+        echo "Erreur CSRF: " . $e->getMessage();
     }
-
-
-
 }
 ?>
 
@@ -88,7 +93,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
                 </div>
 
-                <input type="hidden" name="csrf_token">
+                <!-- Ajouter le token CSRF dans le formulaire -->
+                <input type="hidden" name="csrf_token" value="<?= generateCsrfToken(); ?>">
 
                 <button type="submit" class="btn btn-primary w-100">Envoyer</button>
             </form>
