@@ -1,7 +1,7 @@
 <?php
     require 'config.php';
     if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-        $code= $_POST['code'];
+        $code= htmlspecialchars($_POST['code']);
 
         $stmt = $pdo->prepare("UPDATE users SET is_verified = 1 WHERE verification_token = :verification_token");
         $stmt->execute(['verification_token' => $code]);
