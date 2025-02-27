@@ -4,6 +4,13 @@ require 'config.php';
 require 'csrf.php';
 require 'navbar.php';
 
+require 'C:\Users\andre\Documents\PHPMailer-master\PHPMailer-master\src\Exception.php';  
+require 'C:\Users\andre\Documents\PHPMailer-master\PHPMailer-master\src\PHPMailer.php';  
+require 'C:\Users\andre\Documents\PHPMailer-master\PHPMailer-master\src\SMTP.php';  
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!verifyCsrfToken($_POST['csrf_token'])) {
         die("Token CSRF invalide !");
@@ -17,11 +24,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email']; 
     $mot_de_passe = $_POST['mot_de_passe'];
 
-    // Vérification des champs
     if (empty($nom) || empty($prenom) || empty($date_naissance) || empty($adresse) || empty($telephone) || empty($email) || empty($mot_de_passe)) {
         $error = "Tous les champs doivent être remplis.";
     } else {
-        // Vérification si l'email existe déjà
         $stmt = $pdo->prepare("SELECT * FROM users WHERE email = :email");
         $stmt->execute(['email' => $email]);
         $existingUser = $stmt->fetch();
@@ -29,13 +34,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($existingUser) {
             $error = "L'adresse email est déjà utilisée.";
         } else {
-            // Hacher le mot de passe
             $mot_de_passe_hache = password_hash($mot_de_passe, PASSWORD_BCRYPT);
+            $activation_code = bin2hex(random_bytes(16));
 
-            // Générer un code d'activation
-            $activation_code = bin2hex(random_bytes(16));  // Générer un code aléatoire
-
-            // Insérer l'utilisateur dans la base de données avec is_verified = 0 (inactif)
             $stmt = $pdo->prepare("INSERT INTO users (nom, prenom, date_naissance, adresse, telephone, email, mot_de_passe, is_verified, verification_token) 
             VALUES (:nom, :prenom, :date_naissance, :adresse, :telephone, :email, :mot_de_passe, 0, :verification_token)");
 
@@ -50,25 +51,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'verification_token' => $activation_code
             ]);
 
-            // Envoyer un email de vérification
-            $subject = "Vérification de votre compte";
-            $message = "Cliquez sur le lien suivant pour activer votre compte :\n";
-            $message .= "http://localhost/ton_dossier/activate.php?token=" . $activation_code;
-            $headers = "From: ton-email@gmail.com" . "\r\n" .
-                       "Reply-To: ton-email@gmail.com" . "\r\n" .
-                       "X-Mailer: PHP/" . phpversion();
+            $mail = new PHPMailer(true);
 
-            // Envoi de l'email
-            if(mail($email, $subject, $message, $headers)) {
-                header('Location: login.php');
-                exit();
-            } else {
-                $error = "Une erreur est survenue lors de l'envoi de l'email.";
+            try {
+                $mail->isSMTP();
+                $mail->Host = 'smtp.gmail.com';
+                $mail->SMTPAuth = true;
+                $mail->Username = 'webreservcall@gmail.com';
+                $mail->Password = 'axsj xgmu xpib isoo';
+                $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+                $mail->Port = 587;
+
+                // Activer le débogage
+
+                // Ajouter les options SMTP
+                $mail->SMTPOptions = array(
+                    'ssl' => array(
+                        'verify_peer' => false,
+                        'verify_peer_name' => false,
+                        'allow_self_signed' => true
+                    )
+                );
+
+                $mail->setFrom('webreservcall@gmail.com', 'Reserv call');
+                $mail->addAddress($email, $nom);
+
+                $mail->isHTML(true);
+                $mail->Subject = 'Activation de votre compte';
+                $mail->Body    = 'Bonjour, <br><br>Votre compte a été créé avec succès. Cliquez sur le lien ci-dessous pour activer votre compte et inseré le code suivant <br>'.$activation_code.'  : <br><br><a href="http://githubweb/RESERV-CAL/src/activer_compte.php?token='.$activation_code.'">Activer mon compte</a><br><br>Cordialement,<br>L\'équipe de support';
+
+                $mail->send();
+                echo 'E-mail envoyé avec succès.';
+            } catch (Exception $e) {
+                echo "L'envoi de l'e-mail a échoué. Erreur Mailer: {$mail->ErrorInfo}";
             }
         }
     }
 }
 ?>
+
 
 <body class="bg-light">
     <div class="container mt-5">
@@ -121,7 +142,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <button type="submit" class="btn btn-primary">Créer un compte</button>
                     <a href="login.php" class="btn btn-link">Déjà un compte ?</a>
                 </form>
-
             </div>
         </div>
     </div>
