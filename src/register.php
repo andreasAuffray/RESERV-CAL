@@ -78,7 +78,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
                 $mail->isHTML(true);
                 $mail->Subject = 'Activation de votre compte';
-                $mail->Body    = 'Bonjour, <br><br>Votre compte a été créé avec succès. Cliquez sur le lien ci-dessous pour activer votre compte et inseré le code suivant <br>'.$activation_code.'  : <br><br><a href="http://githubweb/RESERV-CAL/src/activer_compte.php?token='.$activation_code.'">Activer mon compte</a><br><br>Cordialement,<br>L\'équipe de support';
+                $mail->Body    = 'Bonjour, <br><br>Votre compte a cree avec success. Cliquez sur le lien ci-dessous pour activer votre compte et inseré le code suivant <br>'.$activation_code.'  : <br><br><a href="http://githubweb/RESERV-CAL/src/activer_compte.php?token='.$activation_code.'">Activer mon compte</a><br><br>Cordialement,<br>Reserv call';
 
                 $mail->send();
                 echo 'E-mail envoyé avec succès.';
