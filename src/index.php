@@ -35,6 +35,9 @@ $dimanche = date("Y-m-d", strtotime('sunday this week', strtotime($dateActuelle)
 
 $semainePrecedente = date("Y-m-d", strtotime("-1 week", strtotime($lundi)));
 $semaineSuivante = date("Y-m-d", strtotime("+1 week", strtotime($lundi)));
+
+// Tableau des jours de la semaine en français
+$joursFrancais = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
 ?>
 
 <div class="container mt-5">
@@ -50,7 +53,7 @@ $semaineSuivante = date("Y-m-d", strtotime("+1 week", strtotime($lundi)));
         <tr>
             <th>Jour</th>
             <?php for ($i = 0; $i < 7; $i++): ?>
-                <th><?= date("D d/m", strtotime("+$i day", strtotime($lundi))) ?></th>
+                <th><?= $joursFrancais[date("N", strtotime("+$i day", strtotime($lundi))) - 1] . " " . date("d/m", strtotime("+$i day", strtotime($lundi))) ?></th>
             <?php endfor; ?>
         </tr>
 
@@ -62,12 +65,25 @@ $semaineSuivante = date("Y-m-d", strtotime("+1 week", strtotime($lundi)));
                     $date = date("Y-m-d", strtotime("+$i day", strtotime($lundi)));
                     $heureFormat = str_pad($heure, 2, "0", STR_PAD_LEFT) . ":00:00";
 
+                    // Comparaison de la date et heure du créneau avec l'heure actuelle
+                    $currentDateTime = new DateTime();
+                    $slotDateTime = new DateTime("$date $heureFormat");
+
+                    // Vérification si le créneau est dans le passé
+                    $isPastSlot = $slotDateTime < $currentDateTime;
+
+                    // Vérification si le créneau est réservé
                     $stmt = $pdo->prepare("SELECT COUNT(*) FROM reservations WHERE date_rdv = ? AND heure_rdv = ?");
                     $stmt->execute([$date, $heureFormat]);
                     $estReserve = $stmt->fetchColumn();
                     ?>
                     <td>
-                        <?php if ($isConnected): ?>
+                        <?php if ($isPastSlot): ?>
+                            <!-- Affichage du créneau passé pour tout le monde -->
+                            <button class="btn btn-secondary btn-sm" disabled>Passé</button>
+
+                        <?php elseif ($isConnected): ?>
+                            <!-- Si l'utilisateur est connecté -->
                             <?php if ($estReserve): ?>
                                 <button class="btn btn-danger btn-sm" disabled>Réservé</button>
                             <?php else: ?>
@@ -79,8 +95,14 @@ $semaineSuivante = date("Y-m-d", strtotime("+1 week", strtotime($lundi)));
                                     <button type="submit" class="btn btn-success btn-sm">Réserver</button>
                                 </form>
                             <?php endif; ?>
+
                         <?php else: ?>
-                            <a href="login.php" class="btn btn-warning btn-sm">Connexion requise</a>
+                            <!-- Si l'utilisateur n'est pas connecté, on garde le bouton "Réserver" mais il redirige vers login -->
+                            <form action="login.php" method="GET">
+                                <input type="hidden" name="redirect" value="index.php?date=<?= $date ?>&heure=<?= $heureFormat ?>">
+                                <button type="submit" class="btn btn-success btn-sm">Réserver</button>
+                            </form>
+
                         <?php endif; ?>
                     </td>
                 <?php endfor; ?>
@@ -88,5 +110,6 @@ $semaineSuivante = date("Y-m-d", strtotime("+1 week", strtotime($lundi)));
         <?php endfor; ?>
     </table>
 </div>
+
 </body>
 </html>

@@ -33,3 +33,15 @@
         </div>
     </nav>
 </header>
+
+
+<footer class="fixed-bottom bg-dark text-white text-center py-2">
+    <span>Reserv Call - Created by Andréas Auffray | Tel : 000000000</span>
+</footer>
+
+<style>
+    footer {
+        font-size: 14px;
+        box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.2);
+    }
+</style>

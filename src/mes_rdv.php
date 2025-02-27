@@ -8,9 +8,25 @@ if (!isset($_SESSION['id'])) {
     exit();
 }
 
+// Vérifier si l'extension intl est activée
+if (!class_exists('IntlDateFormatter')) {
+    die("L'extension PHP 'intl' est requise pour afficher les dates en français.");
+}
+
+// Récupérer les rendez-vous de l'utilisateur
 $stmt = $pdo->prepare("SELECT * FROM reservations WHERE user_id = ?");
 $stmt->execute([$_SESSION['id']]);
 $rdvs = $stmt->fetchAll();
+
+// Configuration du formatteur de date
+$formatter = new IntlDateFormatter(
+    'fr_FR', 
+    IntlDateFormatter::FULL, 
+    IntlDateFormatter::NONE,
+    null,
+    IntlDateFormatter::GREGORIAN,
+    'EEEE d MMMM yyyy' // Format "Jour Numéro Mois Année"
+);
 ?>
 
 <div class="container mt-5">
@@ -22,8 +38,13 @@ $rdvs = $stmt->fetchAll();
             <th>Action</th>
         </tr>
         <?php foreach ($rdvs as $rdv): ?>
+            <?php
+            // Convertir la date avec IntlDateFormatter
+            $timestamp = strtotime($rdv['date_rdv']);
+            $dateFormatee = $formatter->format($timestamp);
+            ?>
             <tr>
-                <td><?= htmlspecialchars($rdv['date_rdv']) ?></td>
+                <td><?= ucfirst($dateFormatee) ?></td>
                 <td><?= htmlspecialchars($rdv['heure_rdv']) ?></td>
                 <td>
                     <form action="annuler.php" method="POST">

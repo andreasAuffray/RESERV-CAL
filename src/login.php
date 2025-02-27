@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user['is_verified'] == 1) {
                 // Si activé, on connecte l'utilisateur
                 $_SESSION['id'] = $user['id'];
-                header('Location: index.php'); 
+                header('Location: profil.php'); 
                 exit();
             } else {
                 // Si le compte n'est pas activé
