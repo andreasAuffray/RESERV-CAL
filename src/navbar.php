@@ -36,7 +36,7 @@
 
 
 <footer class="fixed-bottom bg-dark text-white text-center py-2">
-    <span>Reserv Call - Created by Andréas Auffray | Tel : 000000000</span>
+    <span>&copy;Reserv Call - Created by Andréas Auffray | Tel : 000000000</span>
 </footer>
 
 <style>
