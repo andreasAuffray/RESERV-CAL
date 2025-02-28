@@ -68,5 +68,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <a href="register.php" class="btn btn-link">Créer un compte</a>
     </form>
 </div>
-</body>
-</html>
+

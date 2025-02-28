@@ -110,5 +110,4 @@ $user = $stmt->fetch();
         <button type="submit" class="btn btn-danger w-100">Supprimer mon compte</button>
     </form>
 </div>
-</body>
-</html>
+

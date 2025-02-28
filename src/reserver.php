@@ -62,5 +62,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <button type="submit" class="btn btn-primary">Réserver</button>
     </form>
 </div>
-</body>
-</html>
+

@@ -111,5 +111,4 @@ $joursFrancais = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
     </table>
 </div>
 
-</body>
-</html>
+

@@ -57,5 +57,4 @@ $formatter = new IntlDateFormatter(
         <?php endforeach; ?>
     </table>
 </div>
-</body>
-</html>
+
